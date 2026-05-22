@@ -5,6 +5,9 @@ info:
   description: REST API for the banking frontend (replaces Redux persist logic)
 servers:
   - url: http://localhost:3000/api/v1
+    description: Local development
+  - url: https://backend-banking-api.onrender.com/api/v1
+    description: Render production (update hostname after deploy)
 paths:
   /auth/signup:
     post:

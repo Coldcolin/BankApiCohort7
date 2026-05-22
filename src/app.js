@@ -5,7 +5,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
-import { connectDb } from './config/db.js';
 import { env } from './config/env.js';
 import { getOpenapiSpec, getOpenapiSpecPath } from './config/openapi.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -18,7 +17,7 @@ import transactionsRoutes from './routes/transactions.routes.js';
 export function createApp() {
   const app = express();
 
-  if (process.env.VERCEL) {
+  if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
   }
 
@@ -39,17 +38,6 @@ export function createApp() {
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
-
-  if (process.env.VERCEL) {
-    app.use('/api', async (_req, _res, next) => {
-      try {
-        await connectDb();
-        next();
-      } catch (err) {
-        next(err);
-      }
-    });
-  }
 
   if (process.env.NODE_ENV !== 'production') {
     const serverRoot = path.resolve(

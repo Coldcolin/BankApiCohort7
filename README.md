@@ -36,8 +36,58 @@ npm run seed
 | `JWT_SECRET` | Secret for signing JWTs (min 16 chars) |
 | `JWT_ACCESS_EXPIRES` | Access token TTL (default `1h`) |
 | `JWT_REFRESH_EXPIRES` | Refresh token TTL (default `7d`) |
-| `CORS_ORIGIN` | Frontend origin (default `http://localhost:5173`) |
+| `CORS_ORIGIN` | Frontend origin (default `http://localhost:5173`; set to your deployed frontend URL on Render) |
 | `BCRYPT_ROUNDS` | bcrypt cost factor (default `12`) |
+
+## Deploy to Render
+
+This API runs as a long-lived Node web service on Render via [`src/index.js`](./src/index.js) (`npm start`).
+
+### 1. Create the service
+
+1. Open the [Render Dashboard](https://dashboard.render.com).
+2. **New → Blueprint** and connect GitHub repo `Coldcolin/BankApiCohort7` (repo root is this `server/` directory), **or** **New → Web Service** with:
+   - **Build command:** `npm install`
+   - **Start command:** `npm start`
+   - **Health check path:** `/health`
+3. If using the blueprint, [`render.yaml`](./render.yaml) applies the same settings automatically.
+
+### 2. Set environment variables
+
+In Render **Environment**, set:
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | MongoDB Atlas connection string |
+| `JWT_SECRET` | Strong secret (min 16 chars) |
+| `CORS_ORIGIN` | Your deployed frontend URL (e.g. `https://your-frontend.example.com`) |
+| `NODE_ENV` | `production` |
+
+Render injects `PORT` automatically; do not override it.
+
+### 3. MongoDB Atlas
+
+In Atlas **Network Access**, allow Render outbound IPs. On Render's free tier the simplest option is `0.0.0.0/0` (allow from anywhere). Confirm the database user in `DATABASE_URL` matches Atlas credentials.
+
+### 4. Verify deployment
+
+```bash
+curl https://<your-service>.onrender.com/health
+# {"status":"ok"}
+
+curl -I https://<your-service>.onrender.com/api-docs
+# 200 OK
+```
+
+Update [`openapi.yaml`](./openapi.yaml) `servers` production URL to match your Render hostname.
+
+**Note:** Free Render web services spin down after ~15 minutes of inactivity; the first request after idle may take 30–60 seconds.
+
+### Post-migration checklist
+
+- Delete or disable the old Vercel project for this API.
+- Point your frontend API base URL to `https://<your-service>.onrender.com/api/v1`.
+- Rotate `JWT_SECRET` if it was ever committed or exposed in deployment logs.
 
 ## API base path
 
