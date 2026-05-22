@@ -32,7 +32,20 @@ export function getEnv() {
     throw new Error('Invalid environment variables');
   }
 
-  cachedEnv = parsed.data;
+  const corsOrigins = [...parsed.data.CORS_ORIGIN];
+
+  if (process.env.RENDER_EXTERNAL_URL) {
+    try {
+      corsOrigins.push(new URL(process.env.RENDER_EXTERNAL_URL).origin);
+    } catch {
+      // Ignore invalid Render URL
+    }
+  }
+
+  cachedEnv = {
+    ...parsed.data,
+    CORS_ORIGIN: [...new Set(corsOrigins)],
+  };
   return cachedEnv;
 }
 

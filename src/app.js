@@ -6,7 +6,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
-import { getOpenapiSpec, getOpenapiSpecPath } from './config/openapi.js';
+import {
+  getOpenapiSpecForRequest,
+  getOpenapiSpecPath,
+} from './config/openapi.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
@@ -59,7 +62,7 @@ export function createApp() {
 
   app.use('/api-docs', swaggerUi.serve, (req, res, next) => {
     try {
-      swaggerUi.setup(getOpenapiSpec())(req, res, next);
+      swaggerUi.setup(getOpenapiSpecForRequest(req))(req, res, next);
     } catch (err) {
       next(err);
     }

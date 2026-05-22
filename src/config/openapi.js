@@ -39,3 +39,18 @@ export function getOpenapiSpecPath() {
 
   return cachedSpecPath;
 }
+
+export function getOpenapiSpecForRequest(req) {
+  const spec = structuredClone(getOpenapiSpec());
+  const host = req.get('host');
+  const baseUrl = host ? `${req.protocol}://${host}/api/v1` : spec.servers?.[0]?.url;
+
+  if (baseUrl) {
+    spec.servers = [
+      { url: baseUrl, description: 'Current host' },
+      ...(spec.servers ?? []).filter((server) => server.url !== baseUrl),
+    ];
+  }
+
+  return spec;
+}
