@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
+import { connectDb } from './config/db.js';
 import { env } from './config/env.js';
 import { openapiSpec, openapiSpecPath } from './config/openapi.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -30,6 +31,17 @@ export function createApp() {
   );
   app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
   app.use(express.json());
+
+  if (process.env.VERCEL) {
+    app.use(async (_req, _res, next) => {
+      try {
+        await connectDb();
+        next();
+      } catch (err) {
+        next(err);
+      }
+    });
+  }
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
