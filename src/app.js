@@ -7,7 +7,7 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import { connectDb } from './config/db.js';
 import { env } from './config/env.js';
-import { openapiSpec, openapiSpecPath } from './config/openapi.js';
+import { getOpenapiSpec, getOpenapiSpecPath } from './config/openapi.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
@@ -17,6 +17,10 @@ import transactionsRoutes from './routes/transactions.routes.js';
 
 export function createApp() {
   const app = express();
+
+  if (process.env.VERCEL) {
+    app.set('trust proxy', 1);
+  }
 
   app.use(
     helmet({
@@ -32,8 +36,12 @@ export function createApp() {
   app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
   app.use(express.json());
 
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
   if (process.env.VERCEL) {
-    app.use(async (_req, _res, next) => {
+    app.use('/api', async (_req, _res, next) => {
       try {
         await connectDb();
         next();
@@ -42,10 +50,6 @@ export function createApp() {
       }
     });
   }
-
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok' });
-  });
 
   if (process.env.NODE_ENV !== 'production') {
     const serverRoot = path.resolve(
@@ -65,9 +69,19 @@ export function createApp() {
     });
   }
 
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
-  app.get('/openapi.yaml', (_req, res) => {
-    res.type('text/yaml').sendFile(openapiSpecPath);
+  app.use('/api-docs', swaggerUi.serve, (req, res, next) => {
+    try {
+      swaggerUi.setup(getOpenapiSpec())(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  });
+  app.get('/openapi.yaml', (_req, res, next) => {
+    try {
+      res.type('text/yaml').sendFile(getOpenapiSpecPath());
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.use('/api/v1/auth', authRoutes);

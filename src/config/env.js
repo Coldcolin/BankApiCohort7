@@ -13,11 +13,29 @@ const envSchema = z.object({
   BCRYPT_ROUNDS: z.coerce.number().min(10).max(14).default(12),
 });
 
-const parsed = envSchema.safeParse(process.env);
+let cachedEnv = null;
 
-if (!parsed.success) {
-  console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
-  throw new Error('Invalid environment variables');
+export function getEnv() {
+  if (cachedEnv) {
+    return cachedEnv;
+  }
+
+  const parsed = envSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+    throw new Error('Invalid environment variables');
+  }
+
+  cachedEnv = parsed.data;
+  return cachedEnv;
 }
 
-export const env = parsed.data;
+export const env = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      return getEnv()[prop];
+    },
+  },
+);
